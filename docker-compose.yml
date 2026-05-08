@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   database:
     image: postgres:14
@@ -38,6 +36,8 @@ services:
     container_name: cartonbox_frontend
     environment:
       REACT_APP_API_URL: http://localhost:8080/api
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
     ports:
       - "3000:3000"
     depends_on:

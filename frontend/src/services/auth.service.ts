@@ -5,22 +5,31 @@ export interface LoginCredentials {
   password: string;
 }
 
+export interface User {
+  id: string;
+  username: string;
+  roles: string[];
+}
+
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  user: {
-    id: string;
-    username: string;
-    roles: string[];
-  };
+  user_id: string;
+  username: string;
+  roles: string[];
 }
 
 class AuthService {
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', credentials);
     if (response.data.access_token) {
+      const user: User = {
+        id: response.data.user_id,
+        username: response.data.username,
+        roles: response.data.roles,
+      };
       localStorage.setItem('token', response.data.access_token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('user', JSON.stringify(user));
     }
     return response.data;
   }
@@ -30,12 +39,17 @@ class AuthService {
     localStorage.removeItem('user');
   }
 
-  getCurrentUser() {
+  getCurrentUser(): User | null {
     const userStr = localStorage.getItem('user');
-    if (userStr) {
-      return JSON.parse(userStr);
+    if (!userStr || userStr === 'undefined') {
+      return null;
     }
-    return null;
+    try {
+      return JSON.parse(userStr) as User;
+    } catch {
+      localStorage.removeItem('user');
+      return null;
+    }
   }
 
   isAuthenticated(): boolean {
@@ -43,4 +57,5 @@ class AuthService {
   }
 }
 
-export default new AuthService();
+const authService = new AuthService();
+export default authService;
