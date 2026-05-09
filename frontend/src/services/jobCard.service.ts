@@ -86,6 +86,10 @@ const jobCardService = {
     const res = await api.post<JobCard>(`/jobcards/${id}/reject`);
     return res.data;
   },
+  async cancel(id: string): Promise<JobCard> {
+    const res = await api.post<JobCard>(`/jobcards/${id}/cancel`);
+    return res.data;
+  },
   async start(id: string): Promise<JobCard> {
     const res = await api.post<JobCard>(`/jobcards/${id}/start`);
     return res.data;

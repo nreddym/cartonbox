@@ -5,6 +5,7 @@ import authService from '../services/auth.service';
 
 const APPROVER_ROLES = ['ADMIN', 'PRODUCTION_MANAGER'];
 const SUPERVISOR_ROLES = ['ADMIN', 'PRODUCTION_MANAGER', 'SUPERVISOR'];
+const CANCEL_ROLES = ['ADMIN', 'PRODUCTION_MANAGER'];
 
 const JobCardDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ const JobCardDetailPage: React.FC = () => {
   const userRoles: string[] = user?.roles || [];
   const canApprove = userRoles.some((r) => APPROVER_ROLES.includes(r));
   const canSupervise = userRoles.some((r) => SUPERVISOR_ROLES.includes(r));
+  const canCancel = userRoles.some((r) => CANCEL_ROLES.includes(r));
 
   const load = async () => {
     if (!id) return;
@@ -38,10 +40,16 @@ const JobCardDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleAction = async (action: 'approve' | 'reject' | 'start' | 'recalc') => {
+  const handleAction = async (action: 'approve' | 'reject' | 'cancel' | 'start' | 'recalc') => {
     if (!id) return;
     if (action === 'reject') {
       const ok = window.confirm('Reject this job card? This cannot be undone.');
+      if (!ok) return;
+    }
+    if (action === 'cancel') {
+      const ok = window.confirm(
+        'Cancel this job card? It will be marked CANCELLED and cannot be reopened. Use this only for mistakenly-created job cards before production starts.',
+      );
       if (!ok) return;
     }
     setActionLoading(true);
@@ -49,6 +57,7 @@ const JobCardDetailPage: React.FC = () => {
     try {
       if (action === 'approve') await jobCardService.approve(id);
       else if (action === 'reject') await jobCardService.reject(id);
+      else if (action === 'cancel') await jobCardService.cancel(id);
       else if (action === 'start') await jobCardService.start(id);
       else await jobCardService.calculateMaterials(id);
       await load();
@@ -153,6 +162,16 @@ const JobCardDetailPage: React.FC = () => {
               style={btn('#c62828')}
             >
               Reject
+            </button>
+          )}
+          {(jc.status === 'CREATED' || jc.status === 'APPROVED') && canCancel && (
+            <button
+              type="button"
+              onClick={() => handleAction('cancel')}
+              disabled={actionLoading}
+              style={btn('#616161')}
+            >
+              Cancel
             </button>
           )}
           {jc.status === 'APPROVED' && canSupervise && (

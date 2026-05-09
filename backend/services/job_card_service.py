@@ -18,13 +18,15 @@ STATUS_APPROVED = "APPROVED"
 STATUS_REJECTED = "REJECTED"
 STATUS_IN_PRODUCTION = "IN_PRODUCTION"
 STATUS_COMPLETED = "COMPLETED"
+STATUS_CANCELLED = "CANCELLED"
 
 ALLOWED_TRANSITIONS = {
-    STATUS_CREATED: {STATUS_APPROVED, STATUS_REJECTED},
-    STATUS_APPROVED: {STATUS_IN_PRODUCTION},
+    STATUS_CREATED: {STATUS_APPROVED, STATUS_REJECTED, STATUS_CANCELLED},
+    STATUS_APPROVED: {STATUS_IN_PRODUCTION, STATUS_CANCELLED},
     STATUS_REJECTED: set(),
     STATUS_IN_PRODUCTION: {STATUS_COMPLETED},
     STATUS_COMPLETED: set(),
+    STATUS_CANCELLED: set(),
 }
 
 # Conversion factor mm^2 -> m^2
@@ -220,6 +222,25 @@ class JobCardService:
             job_card_id=job_card_id,
             new_status=STATUS_REJECTED,
             approved_by=approver_id,
+        )
+
+    def cancel_job_card(
+        self, job_card_id: uuid.UUID, actor_id: uuid.UUID
+    ) -> JobCard:
+        """Cancel a CREATED or APPROVED job card. Terminal, no inventory impact.
+
+        Cancellation is intended for mistakenly-created or no-longer-needed
+        job cards before any production output exists. IN_PRODUCTION /
+        COMPLETED / REJECTED job cards cannot be cancelled.
+        """
+        job_card = self.job_card_repo.get_by_id(job_card_id)
+        if job_card is None:
+            raise ValueError(f"Job card {job_card_id} not found")
+        self._ensure_transition(job_card.status, STATUS_CANCELLED)
+        return self.job_card_repo.update_status(
+            job_card_id=job_card_id,
+            new_status=STATUS_CANCELLED,
+            approved_by=actor_id,
         )
 
     # ------------------------------------------------------------------

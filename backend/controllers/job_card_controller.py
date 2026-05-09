@@ -268,6 +268,22 @@ def reject_job_card(
     return _to_response(jc)
 
 
+@router.post("/{job_card_id}/cancel", response_model=JobCardResponse)
+def cancel_job_card(
+    job_card_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["ADMIN", "PRODUCTION_MANAGER"])),
+):
+    """Cancel a CREATED or APPROVED job card. Terminal, no inventory effect."""
+    jc_uuid = _parse_uuid(job_card_id, "job_card_id")
+    service = JobCardService(db)
+    try:
+        jc = service.cancel_job_card(jc_uuid, actor_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return _to_response(jc)
+
+
 @router.post("/{job_card_id}/start", response_model=JobCardResponse)
 def start_job_card(
     job_card_id: str,
