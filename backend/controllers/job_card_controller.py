@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -9,6 +9,7 @@ from database import get_db
 from auth.dependencies import get_current_user, require_roles
 from models.user import User
 from services.job_card_service import JobCardService
+from services.audit_service import AuditService
 
 
 router = APIRouter(prefix="/api/jobcards", tags=["Job Cards"])
@@ -236,6 +237,7 @@ def calculate_materials(
 @router.post("/{job_card_id}/approve", response_model=JobCardResponse)
 def approve_job_card(
     job_card_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
 ):
@@ -249,12 +251,17 @@ def approve_job_card(
         jc = service.approve_job_card(jc_uuid, approver_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="JOB_CARD", entity_type="JOB_CARD", entity=jc,
+        action="APPROVE", performed_by=current_user.id, request=request,
+    )
     return _to_response(jc)
 
 
 @router.post("/{job_card_id}/reject", response_model=JobCardResponse)
 def reject_job_card(
     job_card_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
 ):
@@ -265,12 +272,17 @@ def reject_job_card(
         jc = service.reject_job_card(jc_uuid, approver_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="JOB_CARD", entity_type="JOB_CARD", entity=jc,
+        action="REJECT", performed_by=current_user.id, request=request,
+    )
     return _to_response(jc)
 
 
 @router.post("/{job_card_id}/cancel", response_model=JobCardResponse)
 def cancel_job_card(
     job_card_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["ADMIN", "PRODUCTION_MANAGER"])),
 ):
@@ -281,12 +293,17 @@ def cancel_job_card(
         jc = service.cancel_job_card(jc_uuid, actor_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="JOB_CARD", entity_type="JOB_CARD", entity=jc,
+        action="CANCEL", performed_by=current_user.id, request=request,
+    )
     return _to_response(jc)
 
 
 @router.post("/{job_card_id}/start", response_model=JobCardResponse)
 def start_job_card(
     job_card_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
 ):
@@ -297,12 +314,17 @@ def start_job_card(
         jc = service.start_production(jc_uuid)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="JOB_CARD", entity_type="JOB_CARD", entity=jc,
+        action="START", performed_by=current_user.id, request=request,
+    )
     return _to_response(jc)
 
 
 @router.post("/{job_card_id}/complete", response_model=JobCardResponse)
 def complete_job_card(
     job_card_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["SUPERVISOR", "ADMIN"])),
 ):
@@ -313,4 +335,8 @@ def complete_job_card(
         jc = service.complete_production(jc_uuid)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="JOB_CARD", entity_type="JOB_CARD", entity=jc,
+        action="COMPLETE", performed_by=current_user.id, request=request,
+    )
     return _to_response(jc)

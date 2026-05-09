@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -9,6 +9,7 @@ from database import get_db
 from auth.dependencies import get_current_user, require_roles
 from models.user import User
 from services.material_issue_service import MaterialIssueService
+from services.audit_service import AuditService
 
 
 router = APIRouter(prefix="/api/material-issues", tags=["Material Issues"])
@@ -75,6 +76,7 @@ def _parse_uuid(value: str, label: str) -> uuid.UUID:
 )
 def create_material_issue(
     request: CreateMaterialIssueRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_roles(["PRODUCTION_MANAGER", "SUPERVISOR", "ADMIN"])
@@ -98,6 +100,16 @@ def create_material_issue(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_create(
+        transaction_type="MATERIAL_ISSUE", entity_type="MATERIAL_ISSUE",
+        entity=mi, performed_by=current_user.id, request=http_request,
+        extra={
+            "job_card_id": str(mi.job_card_id),
+            "paper_roll_id": str(mi.paper_roll_id),
+            "requested_quantity": float(mi.requested_quantity),
+            "unit": mi.unit,
+        },
+    )
     return _to_response(mi)
 
 
@@ -140,7 +152,8 @@ def get_material_issue(
 @router.post("/{issue_id}/approve", response_model=MaterialIssueResponse)
 def approve_material_issue(
     issue_id: str,
-    request: Optional[ApproveMaterialIssueRequest] = None,
+    request: Request,
+    body: Optional[ApproveMaterialIssueRequest] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"])),
 ):
@@ -151,16 +164,21 @@ def approve_material_issue(
         mi = service.approve_issue(
             issue_uuid,
             approver_id=current_user.id,
-            issued_quantity=(request.issued_quantity if request else None),
+            issued_quantity=(body.issued_quantity if body else None),
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="MATERIAL_ISSUE", entity_type="MATERIAL_ISSUE", entity=mi,
+        action="APPROVE", performed_by=current_user.id, request=request,
+    )
     return _to_response(mi)
 
 
 @router.post("/{issue_id}/reject", response_model=MaterialIssueResponse)
 def reject_material_issue(
     issue_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"])),
 ):
@@ -171,4 +189,8 @@ def reject_material_issue(
         mi = service.reject_issue(issue_uuid, approver_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="MATERIAL_ISSUE", entity_type="MATERIAL_ISSUE", entity=mi,
+        action="REJECT", performed_by=current_user.id, request=request,
+    )
     return _to_response(mi)

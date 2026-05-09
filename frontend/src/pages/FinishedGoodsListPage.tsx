@@ -54,10 +54,12 @@ const FinishedGoodsListPage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 16,
+          flexWrap: 'wrap',
+          gap: 12,
         }}
       >
         <h2 style={{ margin: 0 }}>Finished Goods Stock</h2>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Link
             to="/fg-outward"
             style={{

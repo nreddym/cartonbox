@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -9,6 +9,7 @@ from database import get_db
 from auth.dependencies import get_current_user, require_roles
 from models.user import User
 from services.inventory_inward_service import InventoryInwardService
+from services.audit_service import AuditService
 
 
 router = APIRouter(prefix="/api/inventory/inward", tags=["Inventory Inward"])
@@ -69,6 +70,7 @@ def _parse_uuid(value: str, label: str) -> uuid.UUID:
 @router.post("", response_model=InwardResponse, status_code=status.HTTP_201_CREATED)
 def create_inward(
     request: CreateInwardRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"])),
 ):
@@ -90,6 +92,16 @@ def create_inward(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_create(
+        transaction_type="INVENTORY_INWARD", entity_type="INVENTORY_INWARD",
+        entity=inward, performed_by=current_user.id, request=http_request,
+        extra={
+            "paper_roll_id": str(inward.paper_roll_id),
+            "supplier": inward.supplier,
+            "quantity_received": float(inward.quantity_received),
+            "unit": inward.unit,
+        },
+    )
     return _to_response(inward)
 
 
@@ -145,6 +157,7 @@ def get_inward(
 @router.post("/{inward_id}/approve", response_model=InwardResponse)
 def approve_inward(
     inward_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
 ):
@@ -158,12 +171,21 @@ def approve_inward(
         inward = service.approve(inward_id=inward_uuid, approver_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="INVENTORY_INWARD",
+        entity_type="INVENTORY_INWARD",
+        entity=inward,
+        action="APPROVE",
+        performed_by=current_user.id,
+        request=request,
+    )
     return _to_response(inward)
 
 
 @router.post("/{inward_id}/reject", response_model=InwardResponse)
 def reject_inward(
     inward_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
 ):
@@ -177,4 +199,12 @@ def reject_inward(
         inward = service.reject(inward_id=inward_uuid, approver_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="INVENTORY_INWARD",
+        entity_type="INVENTORY_INWARD",
+        entity=inward,
+        action="REJECT",
+        performed_by=current_user.id,
+        request=request,
+    )
     return _to_response(inward)

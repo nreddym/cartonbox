@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import List, Optional
@@ -7,6 +7,7 @@ from database import get_db
 from repositories.user_repository import UserRepository
 from auth.dependencies import get_current_user, require_roles
 from models.user import User
+from services.audit_service import AuditService
 
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
@@ -37,6 +38,7 @@ class UserResponse(BaseModel):
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def create_user(
     request: CreateUserRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["ADMIN"]))
 ):
@@ -68,6 +70,11 @@ def create_user(
             email=request.email,
             password=request.password,
             roles=request.roles
+        )
+        AuditService(db).record_create(
+            transaction_type="USER", entity_type="USER",
+            entity=user, performed_by=current_user.id, request=http_request,
+            extra={"username": user.username, "email": user.email, "roles": list(user.roles)},
         )
         return UserResponse(
             id=str(user.id),
@@ -146,6 +153,7 @@ def get_user(
 def update_user_roles(
     user_id: str,
     request: UpdateRolesRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["ADMIN"]))
 ):
@@ -185,6 +193,15 @@ def update_user_roles(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
+    
+    AuditService(db).log(
+        transaction_type="USER", transaction_id=user.id,
+        entity_type="USER", entity_id=user.id, action="UPDATE_ROLES",
+        after_data={"id": str(user.id), "username": user.username, "roles": list(user.roles)},
+        performed_by=current_user.id,
+        ip_address=(http_request.client.host if http_request.client else None),
+        user_agent=http_request.headers.get("user-agent"),
+    )
     
     return UserResponse(
         id=str(user.id),

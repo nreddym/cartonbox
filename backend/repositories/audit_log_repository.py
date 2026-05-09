@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import Optional, List, Tuple
+from datetime import datetime
 import uuid
 
 from models.audit_log import AuditLog
@@ -69,9 +70,48 @@ class AuditLogRepository:
         entity_id: Optional[uuid.UUID] = None,
         performed_by: Optional[uuid.UUID] = None,
         action: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> List[AuditLog]:
+        q = self._build_query(
+            transaction_type, entity_type, entity_id,
+            performed_by, action, start_date, end_date,
+        )
+        return (
+            q.order_by(AuditLog.performed_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def count(
+        self,
+        transaction_type: Optional[str] = None,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[uuid.UUID] = None,
+        performed_by: Optional[uuid.UUID] = None,
+        action: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> int:
+        q = self._build_query(
+            transaction_type, entity_type, entity_id,
+            performed_by, action, start_date, end_date,
+        )
+        return q.count()
+
+    def _build_query(
+        self,
+        transaction_type: Optional[str],
+        entity_type: Optional[str],
+        entity_id: Optional[uuid.UUID],
+        performed_by: Optional[uuid.UUID],
+        action: Optional[str],
+        start_date: Optional[datetime],
+        end_date: Optional[datetime],
+    ):
         q = self.db.query(AuditLog)
         if transaction_type is not None:
             q = q.filter(AuditLog.transaction_type == transaction_type)
@@ -83,9 +123,8 @@ class AuditLogRepository:
             q = q.filter(AuditLog.performed_by == performed_by)
         if action is not None:
             q = q.filter(AuditLog.action == action)
-        return (
-            q.order_by(AuditLog.performed_at.desc())
-            .offset(skip)
-            .limit(limit)
-            .all()
-        )
+        if start_date is not None:
+            q = q.filter(AuditLog.performed_at >= start_date)
+        if end_date is not None:
+            q = q.filter(AuditLog.performed_at <= end_date)
+        return q

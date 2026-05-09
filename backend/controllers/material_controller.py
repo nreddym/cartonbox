@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import List, Optional
@@ -8,6 +8,7 @@ from repositories.paper_roll_repository import PaperRollRepository
 from repositories.raw_material_inventory_repository import RawMaterialInventoryRepository
 from auth.dependencies import get_current_user, require_roles
 from models.user import User
+from services.audit_service import AuditService
 
 
 router = APIRouter(prefix="/api/materials", tags=["Materials"])
@@ -62,6 +63,7 @@ class StockResponse(BaseModel):
 @router.post("", response_model=PaperRollResponse, status_code=status.HTTP_201_CREATED)
 def create_paper_roll(
     request: CreatePaperRollRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"]))
 ):
@@ -90,6 +92,19 @@ def create_paper_roll(
             opening_stock=request.opening_stock,
             current_stock=request.opening_stock,
             unit=request.unit
+        )
+        
+        AuditService(db).record_create(
+            transaction_type="PAPER_ROLL", entity_type="PAPER_ROLL",
+            entity=paper_roll, performed_by=current_user.id, request=http_request,
+            extra={
+                "material_code": paper_roll.material_code,
+                "paper_type": paper_roll.paper_type,
+                "gsm": paper_roll.gsm,
+                "supplier": paper_roll.supplier,
+                "opening_stock": float(request.opening_stock),
+                "unit": request.unit,
+            },
         )
         
         return PaperRollResponse(
@@ -181,6 +196,7 @@ def get_paper_roll(
 def update_paper_roll(
     material_id: str,
     request: UpdatePaperRollRequest,
+    http_request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"]))
 ):
@@ -212,6 +228,22 @@ def update_paper_roll(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Paper roll not found"
         )
+    
+    AuditService(db).log(
+        transaction_type="PAPER_ROLL", transaction_id=paper_roll.id,
+        entity_type="PAPER_ROLL", entity_id=paper_roll.id, action="UPDATE",
+        after_data={
+            "id": str(paper_roll.id),
+            "material_code": paper_roll.material_code,
+            "paper_type": paper_roll.paper_type,
+            "gsm": paper_roll.gsm,
+            "supplier": paper_roll.supplier,
+            "changes": {k: v for k, v in request.model_dump(exclude_unset=True).items()},
+        },
+        performed_by=current_user.id,
+        ip_address=(http_request.client.host if http_request.client else None),
+        user_agent=http_request.headers.get("user-agent"),
+    )
     
     return PaperRollResponse(
         id=str(paper_roll.id),

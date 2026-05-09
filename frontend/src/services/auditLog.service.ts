@@ -21,13 +21,22 @@ export interface ListAuditLogParams {
   entity_id?: string;
   performed_by?: string;
   action?: string;
+  start_date?: string;
+  end_date?: string;
   skip?: number;
   limit?: number;
 }
 
+export interface AuditLogListResponse {
+  items: AuditLog[];
+  total: number;
+  skip: number;
+  limit: number;
+}
+
 class AuditLogService {
-  async list(params: ListAuditLogParams = {}): Promise<AuditLog[]> {
-    const res = await api.get<AuditLog[]>('/audit-logs', { params });
+  async list(params: ListAuditLogParams = {}): Promise<AuditLogListResponse> {
+    const res = await api.get<AuditLogListResponse>('/audit-logs', { params });
     return res.data;
   }
 

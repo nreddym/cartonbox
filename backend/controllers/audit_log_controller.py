@@ -32,6 +32,13 @@ class AuditLogResponse(BaseModel):
         from_attributes = True
 
 
+class AuditLogListResponse(BaseModel):
+    items: List[AuditLogResponse]
+    total: int
+    skip: int
+    limit: int
+
+
 def _to_response(log) -> AuditLogResponse:
     return AuditLogResponse(
         id=str(log.id),
@@ -56,31 +63,51 @@ def _parse_uuid(value: str, label: str) -> uuid.UUID:
         raise HTTPException(status_code=400, detail=f"Invalid {label}")
 
 
-@router.get("", response_model=List[AuditLogResponse])
+@router.get("", response_model=AuditLogListResponse)
 def list_audit_logs(
     transaction_type: Optional[str] = Query(None),
     entity_type: Optional[str] = Query(None),
     entity_id: Optional[str] = Query(None),
     performed_by: Optional[str] = Query(None),
     action: Optional[str] = Query(None),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(25, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["ADMIN", "AUDITOR"])),
 ):
     service = AuditService(db)
+    parsed_entity_id = _parse_uuid(entity_id, "entity_id") if entity_id else None
+    parsed_performed_by = (
+        _parse_uuid(performed_by, "performed_by") if performed_by else None
+    )
     logs = service.query_logs(
         transaction_type=transaction_type,
         entity_type=entity_type,
-        entity_id=_parse_uuid(entity_id, "entity_id") if entity_id else None,
-        performed_by=(
-            _parse_uuid(performed_by, "performed_by") if performed_by else None
-        ),
+        entity_id=parsed_entity_id,
+        performed_by=parsed_performed_by,
         action=action,
+        start_date=start_date,
+        end_date=end_date,
         skip=skip,
         limit=limit,
     )
-    return [_to_response(log) for log in logs]
+    total = service.count_logs(
+        transaction_type=transaction_type,
+        entity_type=entity_type,
+        entity_id=parsed_entity_id,
+        performed_by=parsed_performed_by,
+        action=action,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    return AuditLogListResponse(
+        items=[_to_response(log) for log in logs],
+        total=total,
+        skip=skip,
+        limit=limit,
+    )
 
 
 @router.get(

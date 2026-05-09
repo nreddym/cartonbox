@@ -116,6 +116,8 @@ const FinishedGoodsOutwardListPage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 16,
+          flexWrap: 'wrap',
+          gap: 12,
         }}
       >
         <h2 style={{ margin: 0 }}>Finished Goods - Outward</h2>

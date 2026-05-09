@@ -1,15 +1,560 @@
+/* ============================================================
+   Global app styles — applies to all role pages
+   ============================================================ */
+
+:root {
+  --color-primary: #1976d2;
+  --color-primary-dark: #115293;
+  --color-primary-light: #e3f2fd;
+  --color-bg: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-border: #e3e7ed;
+  --color-text: #1f2937;
+  --color-text-muted: #6b7280;
+  --color-danger: #c62828;
+  --color-danger-bg: #fde7e7;
+  --color-success: #1b5e20;
+  --color-success-bg: #e8f5e9;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --radius: 8px;
+  --radius-sm: 4px;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
 .App {
   min-height: 100vh;
 }
 
-.App-header {
-  background-color: #282c34;
-  padding: 20px;
-  color: white;
-  text-align: center;
+/* Headings ------------------------------------------------ */
+h1, h2, h3, h4 {
+  color: var(--color-text);
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-.App-header h1 {
-  margin: 0;
-  font-size: 2rem;
+main h2 {
+  font-size: 22px;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+main h3 {
+  font-size: 17px;
+  margin: 20px 0 10px;
+}
+
+/* Tables -------------------------------------------------- */
+main table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  font-size: 14px;
+}
+
+main table thead tr {
+  background: #f8fafc;
+}
+
+main table th {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+main table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  vertical-align: middle;
+}
+
+main table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+main table tbody tr:hover {
+  background: #fafbfc;
+}
+
+/* Inputs / selects --------------------------------------- */
+main input,
+main select,
+main textarea {
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+main input:focus,
+main select:focus,
+main textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15);
+}
+
+/* Page surface wrapper ----------------------------------- */
+.page-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================================
+   Layout: header + sidebar + content
+   ============================================================ */
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 56px;
+  background: linear-gradient(90deg, #1565c0 0%, #1976d2 100%);
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+.app-header__left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-header__logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.app-header__menu-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  font-size: 18px;
+}
+.app-header__menu-btn:hover { background: rgba(255, 255, 255, 0.12); }
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
+  font-size: 13px;
+  max-width: 220px;
+}
+
+.user-pill__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.user-pill__name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-pill__role {
+  margin-left: 4px;
+  opacity: 0.85;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.btn-logout {
+  background: #fff;
+  color: var(--color-primary);
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+.btn-logout:hover { background: #f0f4f8; }
+
+/* Body grid ---------------------------------------------- */
+.app-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.app-sidebar {
+  width: 232px;
+  flex-shrink: 0;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: 14px 10px;
+  overflow-y: auto;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  margin: 2px 0;
+  color: #374151;
+  text-decoration: none;
+  font-size: 14px;
+  border-radius: 6px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.nav-link:hover {
+  background: #f1f5f9;
+  color: var(--color-primary-dark);
+}
+
+.nav-link.active {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+.nav-link__icon {
+  width: 20px;
+  text-align: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  padding: 24px 28px;
+  overflow-x: auto;
+}
+
+/* Mobile overlay ----------------------------------------- */
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 56px 0 0 0;
+  background: rgba(15, 23, 42, 0.4);
+  z-index: 25;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 900px) {
+  .app-header { padding: 0 14px; }
+  .app-header__menu-btn { display: inline-flex; }
+  .app-content { padding: 16px; }
+
+  .app-sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    z-index: 26;
+    box-shadow: var(--shadow-md);
+  }
+  .app-sidebar.is-open { transform: translateX(0); }
+  .sidebar-backdrop.is-open { display: block; }
+
+  .user-pill__role { display: none; }
+  main h2 { font-size: 19px; }
+}
+
+@media (max-width: 640px) {
+  .user-pill__name { display: none; }
+  .user-pill { padding: 2px; }
+  .app-header__brand-text { font-size: 14px; }
+  .app-content { padding: 12px; }
+  main table { font-size: 12.5px; }
+  main table th, main table td { padding: 8px 8px; }
+  /* Make wide tables horizontally scrollable on phones without
+     forcing the whole page to scroll */
+  main table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+}
+
+/* ============================================================
+   Reusable utility classes (used by list pages, forms, etc.)
+   ============================================================ */
+
+/* Page header: title on the left, primary action on the right */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.page-header h2 { border-bottom: none; padding-bottom: 0; margin: 0; }
+
+/* Toolbar / filter bar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.toolbar > * { min-width: 0; }
+
+/* Buttons (default to use unless overridden inline) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  background: #fff;
+  color: var(--color-text);
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+  line-height: 1.2;
+}
+.btn:hover { background: #f3f5f8; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.btn-primary:hover { background: var(--color-primary-dark); border-color: var(--color-primary-dark); }
+
+.btn-secondary {
+  background: #fff;
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.btn-secondary:hover { background: var(--color-primary-light); }
+
+.btn-danger {
+  background: var(--color-danger);
+  color: #fff;
+  border-color: var(--color-danger);
+}
+.btn-danger:hover { filter: brightness(0.95); }
+
+.btn-sm { padding: 4px 10px; font-size: 12.5px; }
+.btn-block { width: 100%; }
+
+/* Status badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: #eef1f5;
+  color: #475569;
+}
+.badge-info    { background: #e3f2fd; color: #0d47a1; }
+.badge-success { background: var(--color-success-bg); color: var(--color-success); }
+.badge-warning { background: #fff8e1; color: #8d6e00; }
+.badge-danger  { background: var(--color-danger-bg); color: #a40000; }
+.badge-purple  { background: #ede7f6; color: #311b92; }
+
+/* Alert message */
+.alert {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  font-size: 14px;
+  border: 1px solid transparent;
+}
+.alert-error  { color: #a40000; background: var(--color-danger-bg); border-color: #f5c2c2; }
+.alert-info   { color: #0d47a1; background: var(--color-primary-light); border-color: #bbdefb; }
+.alert-success{ color: var(--color-success); background: var(--color-success-bg); border-color: #c8e6c9; }
+
+/* Form helpers */
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--color-text-muted); font-weight: 500; }
+.form-row input,
+.form-row select,
+.form-row textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-grid {
+  display: grid;
+  gap: 14px 16px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+/* Table wrap (lets very wide tables scroll horizontally on phones
+   without breaking the rest of the page layout) */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius);
+}
+
+/* Scrollbar polish (desktop) */
+.app-sidebar::-webkit-scrollbar,
+.app-content::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.app-sidebar::-webkit-scrollbar-thumb,
+.app-content::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.app-sidebar::-webkit-scrollbar-thumb:hover,
+.app-content::-webkit-scrollbar-thumb:hover,
+.table-wrap::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ============================================================
+   Login page (rendered outside MainLayout)
+   ============================================================ */
+.login-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #1565c0 0%, #1976d2 60%, #42a5f5 100%);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 32px 28px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+.login-card__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  margin-bottom: 4px;
+}
+.login-card__brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+.login-card__title { text-align: center; margin: 8px 0 22px; font-size: 16px; color: var(--color-text-muted); font-weight: 500; }
+.login-card input {
+  font-family: inherit;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: #fff;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.login-card input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.18);
 }

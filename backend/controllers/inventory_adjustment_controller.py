@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -11,6 +11,7 @@ from models.user import User
 from services.inventory_adjustment_service import (
     InventoryAdjustmentService,
 )
+from services.audit_service import AuditService
 
 
 router = APIRouter(
@@ -66,6 +67,7 @@ def _parse_uuid(value: str, label: str) -> uuid.UUID:
 )
 def create_adjustment(
     payload: CreateAdjustmentRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_roles(["STORE_MANAGER", "PRODUCTION_MANAGER", "ADMIN"])
@@ -83,6 +85,16 @@ def create_adjustment(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    AuditService(db).record_create(
+        transaction_type="INVENTORY_ADJUSTMENT", entity_type="INVENTORY_ADJUSTMENT",
+        entity=adj, performed_by=current_user.id, request=request,
+        extra={
+            "inventory_type": payload.inventory_type,
+            "item_id": str(item_id),
+            "adjustment_quantity": float(payload.adjustment_quantity),
+            "reason": payload.reason,
+        },
+    )
     return _to_response(adj)
 
 
@@ -127,6 +139,7 @@ def get_adjustment(
 )
 def approve_adjustment(
     adjustment_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["ADMIN", "PRODUCTION_MANAGER", "STORE_MANAGER"])),
 ):
@@ -136,6 +149,10 @@ def approve_adjustment(
         adj = service.approve_adjustment(aid, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="INVENTORY_ADJUSTMENT", entity_type="INVENTORY_ADJUSTMENT", entity=adj,
+        action="APPROVE", performed_by=current_user.id, request=request,
+    )
     return _to_response(adj)
 
 
@@ -144,6 +161,7 @@ def approve_adjustment(
 )
 def reject_adjustment(
     adjustment_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles(["ADMIN", "PRODUCTION_MANAGER", "STORE_MANAGER"])),
 ):
@@ -153,4 +171,8 @@ def reject_adjustment(
         adj = service.reject_adjustment(aid, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="INVENTORY_ADJUSTMENT", entity_type="INVENTORY_ADJUSTMENT", entity=adj,
+        action="REJECT", performed_by=current_user.id, request=request,
+    )
     return _to_response(adj)

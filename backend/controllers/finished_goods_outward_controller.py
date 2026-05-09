@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -11,6 +11,7 @@ from models.user import User
 from services.finished_goods_outward_service import (
     FinishedGoodsOutwardService,
 )
+from services.audit_service import AuditService
 
 
 router = APIRouter(
@@ -66,6 +67,7 @@ def _parse_uuid(value: str, label: str) -> uuid.UUID:
 )
 def create_outward(
     payload: CreateOutwardRequest,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_roles(["DISPATCH_MANAGER", "STORE_MANAGER", "ADMIN"])
@@ -83,6 +85,15 @@ def create_outward(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    AuditService(db).record_create(
+        transaction_type="FG_OUTWARD", entity_type="FG_OUTWARD",
+        entity=outward, performed_by=current_user.id, request=request,
+        extra={
+            "finished_goods_id": str(fg_id),
+            "quantity": float(payload.quantity),
+            "destination": payload.destination,
+        },
+    )
     return _to_response(outward)
 
 
@@ -124,6 +135,7 @@ def get_outward(
 @router.post("/{outward_id}/approve", response_model=OutwardResponse)
 def approve_outward(
     outward_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_roles(["DISPATCH_MANAGER", "ADMIN"])
@@ -135,12 +147,17 @@ def approve_outward(
         outward = service.approve_outward(oid, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="FG_OUTWARD", entity_type="FG_OUTWARD", entity=outward,
+        action="APPROVE", performed_by=current_user.id, request=request,
+    )
     return _to_response(outward)
 
 
 @router.post("/{outward_id}/reject", response_model=OutwardResponse)
 def reject_outward(
     outward_id: str,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(
         require_roles(["DISPATCH_MANAGER", "ADMIN"])
@@ -152,4 +169,8 @@ def reject_outward(
         outward = service.reject_outward(oid, current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    AuditService(db).record_state_change(
+        transaction_type="FG_OUTWARD", entity_type="FG_OUTWARD", entity=outward,
+        action="REJECT", performed_by=current_user.id, request=request,
+    )
     return _to_response(outward)

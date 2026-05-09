@@ -47,76 +47,51 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: 400,
-        margin: '60px auto',
-        padding: 24,
-        border: '1px solid #ddd',
-        borderRadius: 8,
-        background: '#fff',
-      }}
-    >
-      <h2 style={{ marginTop: 0 }}>Sign In</h2>
-      <form onSubmit={handleSubmit} noValidate>
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="username" style={{ display: 'block', marginBottom: 4 }}>
-            Username
-          </label>
-          <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            disabled={submitting}
-            style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-          />
+    <div className="login-shell">
+      <div className="login-card">
+        <div className="login-card__brand">
+          <span className="login-card__brand-logo">CB</span>
+          <span>Carton Box Manufacturing</span>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label htmlFor="password" style={{ display: 'block', marginBottom: 4 }}>
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            disabled={submitting}
-            style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
-          />
-        </div>
-        {error && (
-          <div
-            role="alert"
-            style={{
-              color: '#a40000',
-              background: '#fde7e7',
-              padding: 8,
-              borderRadius: 4,
-              marginBottom: 12,
-            }}
-          >
-            {error}
+        <p className="login-card__title">Sign in to your account</p>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="form-row">
+            <label htmlFor="username">Username</label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              disabled={submitting}
+            />
           </div>
-        )}
-        <button
-          type="submit"
-          disabled={submitting}
-          style={{
-            width: '100%',
-            padding: 10,
-            background: '#1976d2',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 4,
-            cursor: submitting ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {submitting ? 'Signing in...' : 'Sign In'}
-        </button>
-      </form>
+          <div className="form-row">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              disabled={submitting}
+            />
+          </div>
+          {error && (
+            <div role="alert" className="alert alert-error">
+              {error}
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn btn-primary btn-block"
+            style={{ marginTop: 4 }}
+          >
+            {submitting ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };

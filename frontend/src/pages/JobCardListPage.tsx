@@ -118,6 +118,8 @@ const JobCardListPage: React.FC = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 16,
+          flexWrap: 'wrap',
+          gap: 12,
         }}
       >
         <h2 style={{ margin: 0 }}>Job Cards</h2>
@@ -135,7 +137,7 @@ const JobCardListPage: React.FC = () => {
         </Link>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 12, flexWrap: 'wrap' }}>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as JobCardStatus | 'ALL')}

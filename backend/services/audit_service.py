@@ -72,6 +72,8 @@ class AuditService:
         entity_id: Optional[uuid.UUID] = None,
         performed_by: Optional[uuid.UUID] = None,
         action: Optional[str] = None,
+        start_date=None,
+        end_date=None,
         skip: int = 0,
         limit: int = 100,
     ) -> List[AuditLog]:
@@ -81,6 +83,103 @@ class AuditService:
             entity_id=entity_id,
             performed_by=performed_by,
             action=action,
+            start_date=start_date,
+            end_date=end_date,
             skip=skip,
             limit=limit,
+        )
+
+    def count_logs(
+        self,
+        transaction_type: Optional[str] = None,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[uuid.UUID] = None,
+        performed_by: Optional[uuid.UUID] = None,
+        action: Optional[str] = None,
+        start_date=None,
+        end_date=None,
+    ) -> int:
+        return self.repo.count(
+            transaction_type=transaction_type,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            performed_by=performed_by,
+            action=action,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    # ------------------------------------------------------------------
+    # Convenience helpers
+    # ------------------------------------------------------------------
+    def record_state_change(
+        self,
+        transaction_type: str,
+        entity_type: str,
+        entity,
+        action: str,
+        performed_by: uuid.UUID,
+        before_status: Optional[str] = None,
+        request=None,
+    ) -> AuditLog:
+        """Record a state-change audit entry for an entity with a `status` attr.
+
+        Pulls IP/user-agent from a FastAPI Request when supplied.
+        """
+        ip = None
+        ua = None
+        if request is not None:
+            try:
+                ip = request.client.host if request.client else None
+                ua = request.headers.get("user-agent")
+            except Exception:
+                pass
+        after_status = getattr(entity, "status", None)
+        return self.log(
+            transaction_type=transaction_type,
+            transaction_id=entity.id,
+            entity_type=entity_type,
+            entity_id=entity.id,
+            action=action,
+            after_data={"status": after_status, "id": str(entity.id)},
+            before_data={"status": before_status} if before_status else None,
+            performed_by=performed_by,
+            ip_address=ip,
+            user_agent=ua,
+        )
+
+    def record_create(
+        self,
+        transaction_type: str,
+        entity_type: str,
+        entity,
+        performed_by: uuid.UUID,
+        extra: Optional[dict] = None,
+        request=None,
+    ) -> AuditLog:
+        """Record a CREATE audit entry. `extra` is merged into after_data."""
+        ip = None
+        ua = None
+        if request is not None:
+            try:
+                ip = request.client.host if request.client else None
+                ua = request.headers.get("user-agent")
+            except Exception:
+                pass
+        after_data = {"id": str(entity.id)}
+        status_val = getattr(entity, "status", None)
+        if status_val is not None:
+            after_data["status"] = status_val
+        if extra:
+            after_data.update(extra)
+        return self.log(
+            transaction_type=transaction_type,
+            transaction_id=entity.id,
+            entity_type=entity_type,
+            entity_id=entity.id,
+            action="CREATE",
+            after_data=after_data,
+            performed_by=performed_by,
+            ip_address=ip,
+            user_agent=ua,
         )
