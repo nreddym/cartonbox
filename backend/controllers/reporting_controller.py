@@ -115,7 +115,9 @@ def finished_goods_stock_report(
     date_from: Optional[date] = Query(None),
     date_to: Optional[date] = Query(None),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(REPORT_ROLES)),
+    current_user: User = Depends(
+        require_roles(REPORT_ROLES + ["DISPATCH_MANAGER"])
+    ),
 ):
     service = ReportingService(db)
     return service.finished_goods_stock_report(
