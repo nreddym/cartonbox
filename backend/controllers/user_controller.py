@@ -45,7 +45,14 @@ def create_user(
     Validates: Requirements 12.1
     """
     # Validate roles are from allowed set
-    allowed_roles = ["ADMIN", "PRODUCTION_MANAGER", "STORE_MANAGER", "SUPERVISOR"]
+    allowed_roles = [
+        "ADMIN",
+        "PRODUCTION_MANAGER",
+        "STORE_MANAGER",
+        "SUPERVISOR",
+        "DISPATCH_MANAGER",
+        "AUDITOR",
+    ]
     for role in request.roles:
         if role not in allowed_roles:
             raise HTTPException(
@@ -155,7 +162,14 @@ def update_user_roles(
         )
     
     # Validate roles are from allowed set
-    allowed_roles = ["ADMIN", "PRODUCTION_MANAGER", "STORE_MANAGER", "SUPERVISOR"]
+    allowed_roles = [
+        "ADMIN",
+        "PRODUCTION_MANAGER",
+        "STORE_MANAGER",
+        "SUPERVISOR",
+        "DISPATCH_MANAGER",
+        "AUDITOR",
+    ]
     for role in request.roles:
         if role not in allowed_roles:
             raise HTTPException(

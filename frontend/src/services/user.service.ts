@@ -5,6 +5,8 @@ export const ALLOWED_ROLES = [
   'PRODUCTION_MANAGER',
   'STORE_MANAGER',
   'SUPERVISOR',
+  'DISPATCH_MANAGER',
+  'AUDITOR',
 ] as const;
 
 export type UserRole = (typeof ALLOWED_ROLES)[number];
