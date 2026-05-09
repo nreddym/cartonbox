@@ -95,7 +95,7 @@ class FinishedGoodsOutwardService:
         # Req 8.3: deduct stock on approval.
         self.fg_inventory_repo.decrement_stock(
             finished_goods_id=outward.finished_goods_id,
-            quantity=int(outward.quantity),
+            delta=int(outward.quantity),
         )
 
         return self.outward_repo.update_status(
