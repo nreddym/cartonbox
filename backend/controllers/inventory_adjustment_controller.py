@@ -128,7 +128,7 @@ def get_adjustment(
 def approve_adjustment(
     adjustment_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["ADMIN"])),
+    current_user: User = Depends(require_roles(["ADMIN", "PRODUCTION_MANAGER", "STORE_MANAGER"])),
 ):
     aid = _parse_uuid(adjustment_id, "adjustment_id")
     service = InventoryAdjustmentService(db)
@@ -145,7 +145,7 @@ def approve_adjustment(
 def reject_adjustment(
     adjustment_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["ADMIN"])),
+    current_user: User = Depends(require_roles(["ADMIN", "PRODUCTION_MANAGER", "STORE_MANAGER"])),
 ):
     aid = _parse_uuid(adjustment_id, "adjustment_id")
     service = InventoryAdjustmentService(db)

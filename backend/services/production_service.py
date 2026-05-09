@@ -13,6 +13,7 @@ from repositories.finished_goods_inventory_repository import (
 from repositories.finished_goods_inward_repository import (
     FinishedGoodsInwardRepository,
 )
+from repositories.material_issue_repository import MaterialIssueRepository
 
 
 JC_STATUS_IN_PRODUCTION = "IN_PRODUCTION"
@@ -32,6 +33,7 @@ class ProductionService:
         self.fg_repo = FinishedGoodsRepository(db)
         self.fg_inventory_repo = FinishedGoodsInventoryRepository(db)
         self.fg_inward_repo = FinishedGoodsInwardRepository(db)
+        self.material_issue_repo = MaterialIssueRepository(db)
 
     # ------------------------------------------------------------------
     # Net finished goods calculation (Req 6.3)
@@ -82,6 +84,21 @@ class ProductionService:
             raise ValueError(
                 "Cannot record production completion for job card in status "
                 f"'{job_card.status}'"
+            )
+
+        # Enforce that raw material has been issued and approved against this
+        # job card before production can be completed. This guarantees raw
+        # stock is decremented (via material issue approval) and prevents the
+        # finished goods stock from being inflated without a matching raw
+        # consumption record.
+        approved_issued = self.material_issue_repo.total_issued_for_job_card(
+            job_card_id=job_card.id
+        )
+        if approved_issued <= 0:
+            raise ValueError(
+                "Cannot complete production: no APPROVED material issue exists "
+                "for this job card. Issue and approve raw material before "
+                "recording production completion."
             )
 
         net_quantity = self.calculate_net_quantity(

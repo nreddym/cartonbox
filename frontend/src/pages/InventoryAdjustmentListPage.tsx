@@ -22,7 +22,8 @@ const STATUS_COLORS: Record<AdjustmentStatus, { bg: string; fg: string }> = {
   REJECTED: { bg: '#fde7e7', fg: '#a40000' },
 };
 
-const APPROVER_ROLES = ['ADMIN'];
+const APPROVER_ROLES = ['ADMIN', 'PRODUCTION_MANAGER', 'STORE_MANAGER'];
+const CREATOR_ROLES = ['ADMIN', 'STORE_MANAGER', 'PRODUCTION_MANAGER'];
 
 const StatusBadge: React.FC<{ status: AdjustmentStatus }> = ({ status }) => {
   const c = STATUS_COLORS[status];
@@ -53,6 +54,7 @@ const InventoryAdjustmentListPage: React.FC = () => {
   const user = authService.getCurrentUser();
   const userRoles: string[] = user?.roles || [];
   const canApprove = userRoles.some((r) => APPROVER_ROLES.includes(r));
+  const canCreate = userRoles.some((r) => CREATOR_ROLES.includes(r));
 
   const load = async () => {
     setLoading(true);
@@ -110,18 +112,20 @@ const InventoryAdjustmentListPage: React.FC = () => {
         }}
       >
         <h2 style={{ margin: 0 }}>Inventory Adjustments</h2>
-        <Link
-          to="/adjustments/new"
-          style={{
-            padding: '8px 14px',
-            background: '#1976d2',
-            color: '#fff',
-            borderRadius: 4,
-            textDecoration: 'none',
-          }}
-        >
-          + New Adjustment
-        </Link>
+        {canCreate && (
+          <Link
+            to="/adjustments/new"
+            style={{
+              padding: '8px 14px',
+              background: '#1976d2',
+              color: '#fff',
+              borderRadius: 4,
+              textDecoration: 'none',
+            }}
+          >
+            + New Adjustment
+          </Link>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>

@@ -17,7 +17,7 @@ const MENU_ITEMS: MenuItem[] = [
   { to: '/production', label: 'Production', roles: ['ADMIN', 'PRODUCTION_MANAGER', 'SUPERVISOR'] },
   { to: '/finished-goods', label: 'Finished Goods', roles: ['ADMIN', 'PRODUCTION_MANAGER', 'STORE_MANAGER', 'DISPATCH_MANAGER', 'AUDITOR'] },
   { to: '/fg-outward', label: 'FG Outward', roles: ['ADMIN', 'STORE_MANAGER', 'DISPATCH_MANAGER'] },
-  { to: '/adjustments', label: 'Adjustments', roles: ['ADMIN'] },
+  { to: '/adjustments', label: 'Adjustments', roles: ['ADMIN', 'STORE_MANAGER', 'PRODUCTION_MANAGER', 'AUDITOR'] },
   { to: '/reports', label: 'Reports', roles: ['ADMIN', 'PRODUCTION_MANAGER', 'STORE_MANAGER', 'AUDITOR'] },
   { to: '/audit-logs', label: 'Audit Logs', roles: ['ADMIN', 'AUDITOR'] },
   { to: '/users', label: 'Users', roles: ['ADMIN'] },

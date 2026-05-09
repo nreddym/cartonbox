@@ -54,7 +54,10 @@ const InventoryInwardListPage: React.FC = () => {
   };
 
   const total = useMemo(
-    () => records.reduce((sum, r) => sum + Number(r.quantity_received || 0), 0),
+    () =>
+      records
+        .filter((r) => r.status === 'APPROVED')
+        .reduce((sum, r) => sum + Number(r.quantity_received || 0), 0),
     [records],
   );
 
@@ -98,7 +101,7 @@ const InventoryInwardListPage: React.FC = () => {
           ))}
         </select>
         <span style={{ alignSelf: 'center', color: '#666' }}>
-          {records.length} record(s){records.length > 0 && `, total received: ${total.toFixed(2)}`}
+          {records.length} record(s){records.length > 0 && `, total received (approved): ${total.toFixed(2)}`}
         </span>
       </div>
 
