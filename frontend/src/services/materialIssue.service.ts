@@ -20,7 +20,6 @@ export interface CreateMaterialIssuePayload {
   job_card_id: string;
   paper_roll_id: string;
   requested_quantity: number;
-  issued_quantity: number;
   unit: string;
   issue_date: string;
 }
@@ -43,8 +42,12 @@ const materialIssueService = {
     const res = await api.post<MaterialIssue>('/material-issues', payload);
     return res.data;
   },
-  async approve(id: string): Promise<MaterialIssue> {
-    const res = await api.post<MaterialIssue>(`/material-issues/${id}/approve`);
+  async approve(id: string, issuedQuantity?: number): Promise<MaterialIssue> {
+    const body =
+      issuedQuantity !== undefined && issuedQuantity !== null
+        ? { issued_quantity: issuedQuantity }
+        : {};
+    const res = await api.post<MaterialIssue>(`/material-issues/${id}/approve`, body);
     return res.data;
   },
   async reject(id: string): Promise<MaterialIssue> {

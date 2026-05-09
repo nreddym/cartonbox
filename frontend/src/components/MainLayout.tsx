@@ -13,7 +13,7 @@ const MENU_ITEMS: MenuItem[] = [
   { to: '/paper-rolls', label: 'Paper Rolls', roles: ['ADMIN', 'STORE_MANAGER'] },
   { to: '/inventory-inward', label: 'Inventory Inward', roles: ['ADMIN', 'STORE_MANAGER', 'SUPERVISOR'] },
   { to: '/job-cards', label: 'Job Cards', roles: ['ADMIN', 'PRODUCTION_MANAGER', 'SUPERVISOR'] },
-  { to: '/material-issues', label: 'Material Issues', roles: ['ADMIN', 'STORE_MANAGER', 'SUPERVISOR'] },
+  { to: '/material-issues', label: 'Material Issues', roles: ['ADMIN', 'STORE_MANAGER', 'SUPERVISOR', 'PRODUCTION_MANAGER'] },
   { to: '/production', label: 'Production', roles: ['ADMIN', 'PRODUCTION_MANAGER', 'SUPERVISOR'] },
   { to: '/finished-goods', label: 'Finished Goods', roles: ['ADMIN', 'PRODUCTION_MANAGER', 'STORE_MANAGER', 'DISPATCH_MANAGER', 'AUDITOR'] },
   { to: '/fg-outward', label: 'FG Outward', roles: ['ADMIN', 'STORE_MANAGER', 'DISPATCH_MANAGER'] },

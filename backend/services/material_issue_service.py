@@ -103,10 +103,16 @@ class MaterialIssueService:
     # Approve (deduct stock; transition job card to IN_PRODUCTION)
     # ------------------------------------------------------------------
     def approve_issue(
-        self, issue_id: uuid.UUID, approver_id: uuid.UUID
+        self,
+        issue_id: uuid.UUID,
+        approver_id: uuid.UUID,
+        issued_quantity: Optional[float] = None,
     ) -> MaterialIssue:
         """Approve a pending issue. Deducts stock and triggers job card
         transition to IN_PRODUCTION on first approval.
+
+        If ``issued_quantity`` is provided, it overrides the value captured at
+        request time (the store team decides the actual quantity issued).
 
         Validates: Requirements 4.2, 4.3, 5.3
         """
@@ -122,6 +128,35 @@ class MaterialIssueService:
             raise ValueError(
                 "Approver must be different from the requesting user"
             )
+
+        # Apply optional override from the approver (store team decides
+        # actual issued quantity, may be a partial fulfilment).
+        if issued_quantity is not None:
+            if issued_quantity <= 0:
+                raise ValueError("issued_quantity must be positive")
+            if issued_quantity > float(material_issue.requested_quantity):
+                raise ValueError(
+                    "issued_quantity cannot exceed requested_quantity"
+                )
+            # Re-check the cumulative cap against job card requirement.
+            job_card = self.job_card_repo.get_by_id(material_issue.job_card_id)
+            if (
+                job_card is not None
+                and job_card.required_paper_quantity is not None
+            ):
+                already_issued = self.issue_repo.total_issued_for_job_card(
+                    material_issue.job_card_id
+                )
+                required = float(job_card.required_paper_quantity)
+                if already_issued + issued_quantity > required + 1e-6:
+                    raise ValueError(
+                        "Total issued quantity would exceed job card required "
+                        f"quantity ({already_issued + issued_quantity:.4f} > "
+                        f"{required:.4f})"
+                    )
+            material_issue.issued_quantity = issued_quantity
+            self.db.commit()
+            self.db.refresh(material_issue)
 
         # Validate stock and deduct (Req 4.3)
         inventory = self.inventory_repo.get_by_paper_roll_id(

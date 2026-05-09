@@ -18,9 +18,13 @@ class CreateMaterialIssueRequest(BaseModel):
     job_card_id: str
     paper_roll_id: str
     requested_quantity: float = Field(gt=0)
-    issued_quantity: float = Field(gt=0)
+    issued_quantity: Optional[float] = Field(default=None, gt=0)
     unit: str = Field(min_length=1)
     issue_date: date
+
+
+class ApproveMaterialIssueRequest(BaseModel):
+    issued_quantity: Optional[float] = Field(default=None, gt=0)
 
 
 class MaterialIssueResponse(BaseModel):
@@ -72,7 +76,9 @@ def _parse_uuid(value: str, label: str) -> uuid.UUID:
 def create_material_issue(
     request: CreateMaterialIssueRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"])),
+    current_user: User = Depends(
+        require_roles(["PRODUCTION_MANAGER", "SUPERVISOR", "ADMIN"])
+    ),
 ):
     """Create a material issue request. Validates: Requirements 4.1, 4.2, 4.4"""
     service = MaterialIssueService(db)
@@ -81,7 +87,11 @@ def create_material_issue(
             job_card_id=_parse_uuid(request.job_card_id, "job_card_id"),
             paper_roll_id=_parse_uuid(request.paper_roll_id, "paper_roll_id"),
             requested_quantity=request.requested_quantity,
-            issued_quantity=request.issued_quantity,
+            issued_quantity=(
+                request.issued_quantity
+                if request.issued_quantity is not None
+                else request.requested_quantity
+            ),
             unit=request.unit,
             issue_date=request.issue_date,
             requested_by=current_user.id,
@@ -130,14 +140,19 @@ def get_material_issue(
 @router.post("/{issue_id}/approve", response_model=MaterialIssueResponse)
 def approve_material_issue(
     issue_id: str,
+    request: Optional[ApproveMaterialIssueRequest] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
+    current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"])),
 ):
     """Approve a material issue. Validates: Requirements 4.2, 4.3, 5.3"""
     issue_uuid = _parse_uuid(issue_id, "issue_id")
     service = MaterialIssueService(db)
     try:
-        mi = service.approve_issue(issue_uuid, approver_id=current_user.id)
+        mi = service.approve_issue(
+            issue_uuid,
+            approver_id=current_user.id,
+            issued_quantity=(request.issued_quantity if request else None),
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return _to_response(mi)
@@ -147,7 +162,7 @@ def approve_material_issue(
 def reject_material_issue(
     issue_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
+    current_user: User = Depends(require_roles(["STORE_MANAGER", "ADMIN"])),
 ):
     """Reject a material issue. Validates: Requirements 4.2"""
     issue_uuid = _parse_uuid(issue_id, "issue_id")

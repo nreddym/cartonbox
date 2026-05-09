@@ -7,6 +7,7 @@ const STATUS_OPTIONS: Array<JobCardStatus | 'ALL'> = [
   'ALL',
   'CREATED',
   'APPROVED',
+  'REJECTED',
   'IN_PRODUCTION',
   'COMPLETED',
   'CANCELLED',
@@ -15,6 +16,7 @@ const STATUS_OPTIONS: Array<JobCardStatus | 'ALL'> = [
 const STATUS_COLORS: Record<JobCardStatus, { bg: string; fg: string }> = {
   CREATED: { bg: '#e3f2fd', fg: '#0d47a1' },
   APPROVED: { bg: '#e8f5e9', fg: '#1b5e20' },
+  REJECTED: { bg: '#fde7e7', fg: '#a40000' },
   IN_PRODUCTION: { bg: '#fff8e1', fg: '#8d6e00' },
   COMPLETED: { bg: '#ede7f6', fg: '#311b92' },
   CANCELLED: { bg: '#fde7e7', fg: '#a40000' },

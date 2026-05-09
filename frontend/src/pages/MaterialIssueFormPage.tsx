@@ -25,7 +25,6 @@ const MaterialIssueFormPage: React.FC = () => {
     job_card_id: prefillJobCardId,
     paper_roll_id: '',
     requested_quantity: '',
-    issued_quantity: '',
     unit: 'kg',
     issue_date: todayIso(),
   });
@@ -64,9 +63,6 @@ const MaterialIssueFormPage: React.FC = () => {
     const req = Number(form.requested_quantity);
     if (!form.requested_quantity || isNaN(req) || req <= 0)
       return 'Requested quantity must be a positive number';
-    const iss = Number(form.issued_quantity);
-    if (!form.issued_quantity || isNaN(iss) || iss <= 0)
-      return 'Issued quantity must be a positive number';
     if (!form.unit.trim()) return 'Unit is required';
     if (!form.issue_date) return 'Issue date is required';
     return null;
@@ -86,7 +82,6 @@ const MaterialIssueFormPage: React.FC = () => {
         job_card_id: form.job_card_id,
         paper_roll_id: form.paper_roll_id,
         requested_quantity: Number(form.requested_quantity),
-        issued_quantity: Number(form.issued_quantity),
         unit: form.unit,
         issue_date: form.issue_date,
       };
@@ -158,17 +153,9 @@ const MaterialIssueFormPage: React.FC = () => {
               style={input}
             />
           </Field>
-          <Field label="Issued quantity">
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={form.issued_quantity}
-              onChange={(e) => update('issued_quantity', e.target.value)}
-              disabled={submitting}
-              style={input}
-            />
-          </Field>
+          <div style={{ alignSelf: 'end', fontSize: 12, color: '#666', paddingBottom: 8 }}>
+            Issued quantity will be entered by the Store Manager at approval time.
+          </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>

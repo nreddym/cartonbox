@@ -9,17 +9,20 @@ from repositories.paper_roll_repository import PaperRollRepository
 from repositories.raw_material_inventory_repository import (
     RawMaterialInventoryRepository,
 )
+from repositories.material_issue_repository import MaterialIssueRepository
 
 
 # Job card state machine
 STATUS_CREATED = "CREATED"
 STATUS_APPROVED = "APPROVED"
+STATUS_REJECTED = "REJECTED"
 STATUS_IN_PRODUCTION = "IN_PRODUCTION"
 STATUS_COMPLETED = "COMPLETED"
 
 ALLOWED_TRANSITIONS = {
-    STATUS_CREATED: {STATUS_APPROVED},
+    STATUS_CREATED: {STATUS_APPROVED, STATUS_REJECTED},
     STATUS_APPROVED: {STATUS_IN_PRODUCTION},
+    STATUS_REJECTED: set(),
     STATUS_IN_PRODUCTION: {STATUS_COMPLETED},
     STATUS_COMPLETED: set(),
 }
@@ -175,6 +178,10 @@ class JobCardService:
         if job_card is None:
             raise ValueError(f"Job card {job_card_id} not found")
         self._ensure_transition(job_card.status, STATUS_APPROVED)
+        if job_card.created_by == approver_id:
+            raise ValueError(
+                "Approver must be different from the user who created the job card"
+            )
 
         if (
             job_card.calculated_paper_area is None
@@ -197,6 +204,24 @@ class JobCardService:
             approved_by=approver_id,
         )
 
+    def reject_job_card(
+        self, job_card_id: uuid.UUID, approver_id: uuid.UUID
+    ) -> JobCard:
+        """Reject a CREATED job card. Approver must differ from creator."""
+        job_card = self.job_card_repo.get_by_id(job_card_id)
+        if job_card is None:
+            raise ValueError(f"Job card {job_card_id} not found")
+        self._ensure_transition(job_card.status, STATUS_REJECTED)
+        if job_card.created_by == approver_id:
+            raise ValueError(
+                "Approver must be different from the user who created the job card"
+            )
+        return self.job_card_repo.update_status(
+            job_card_id=job_card_id,
+            new_status=STATUS_REJECTED,
+            approved_by=approver_id,
+        )
+
     # ------------------------------------------------------------------
     # State transitions for production lifecycle (Req 5.3, 5.4)
     # ------------------------------------------------------------------
@@ -213,6 +238,18 @@ class JobCardService:
         if job_card is None:
             raise ValueError(f"Job card {job_card_id} not found")
         self._ensure_transition(job_card.status, STATUS_IN_PRODUCTION)
+
+        # Guard: production cannot start until raw material has been issued
+        # and approved against this job card. This keeps raw stock
+        # reconciled with production output.
+        issue_repo = MaterialIssueRepository(self.db)
+        approved_issued = issue_repo.total_issued_for_job_card(job_card_id)
+        if approved_issued <= 0:
+            raise ValueError(
+                "Cannot start production: no APPROVED material issue exists "
+                "for this job card. Issue and approve raw material first."
+            )
+
         return self.job_card_repo.update_status(
             job_card_id=job_card_id,
             new_status=STATUS_IN_PRODUCTION,

@@ -3,6 +3,7 @@ import api from './api';
 export type JobCardStatus =
   | 'CREATED'
   | 'APPROVED'
+  | 'REJECTED'
   | 'IN_PRODUCTION'
   | 'COMPLETED'
   | 'CANCELLED';
@@ -79,6 +80,10 @@ const jobCardService = {
   },
   async approve(id: string): Promise<JobCard> {
     const res = await api.post<JobCard>(`/jobcards/${id}/approve`);
+    return res.data;
+  },
+  async reject(id: string): Promise<JobCard> {
+    const res = await api.post<JobCard>(`/jobcards/${id}/reject`);
     return res.data;
   },
   async start(id: string): Promise<JobCard> {

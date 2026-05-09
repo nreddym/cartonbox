@@ -110,7 +110,9 @@ def _parse_uuid(value: str, label: str) -> uuid.UUID:
 def create_job_card(
     request: CreateJobCardRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
+    current_user: User = Depends(
+        require_roles(["SUPERVISOR", "PRODUCTION_MANAGER", "ADMIN"])
+    ),
 ):
     """Create a job card. Validates: Requirements 3.1, 3.2, 3.3, 5.1"""
     service = JobCardService(db)
@@ -172,7 +174,9 @@ def update_job_card(
     job_card_id: str,
     request: UpdateJobCardRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
+    current_user: User = Depends(
+        require_roles(["SUPERVISOR", "PRODUCTION_MANAGER", "ADMIN"])
+    ),
 ):
     """Update job card details. Validates: Requirements 3.1"""
     jc_uuid = _parse_uuid(job_card_id, "job_card_id")
@@ -211,7 +215,9 @@ def update_job_card(
 def calculate_materials(
     job_card_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
+    current_user: User = Depends(
+        require_roles(["SUPERVISOR", "PRODUCTION_MANAGER", "ADMIN"])
+    ),
 ):
     """Compute and persist paper area + required quantity. Validates: Requirements 3.2, 3.3"""
     jc_uuid = _parse_uuid(job_card_id, "job_card_id")
@@ -241,6 +247,22 @@ def approve_job_card(
     service = JobCardService(db)
     try:
         jc = service.approve_job_card(jc_uuid, approver_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    return _to_response(jc)
+
+
+@router.post("/{job_card_id}/reject", response_model=JobCardResponse)
+def reject_job_card(
+    job_card_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles(["PRODUCTION_MANAGER", "ADMIN"])),
+):
+    """Reject a CREATED job card. Approver must differ from creator."""
+    jc_uuid = _parse_uuid(job_card_id, "job_card_id")
+    service = JobCardService(db)
+    try:
+        jc = service.reject_job_card(jc_uuid, approver_id=current_user.id)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     return _to_response(jc)

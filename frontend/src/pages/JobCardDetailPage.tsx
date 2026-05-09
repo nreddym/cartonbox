@@ -38,12 +38,17 @@ const JobCardDetailPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleAction = async (action: 'approve' | 'start' | 'recalc') => {
+  const handleAction = async (action: 'approve' | 'reject' | 'start' | 'recalc') => {
     if (!id) return;
+    if (action === 'reject') {
+      const ok = window.confirm('Reject this job card? This cannot be undone.');
+      if (!ok) return;
+    }
     setActionLoading(true);
     setError(null);
     try {
       if (action === 'approve') await jobCardService.approve(id);
+      else if (action === 'reject') await jobCardService.reject(id);
       else if (action === 'start') await jobCardService.start(id);
       else await jobCardService.calculateMaterials(id);
       await load();
@@ -138,6 +143,16 @@ const JobCardDetailPage: React.FC = () => {
               style={btn('#2e7d32')}
             >
               Approve
+            </button>
+          )}
+          {jc.status === 'CREATED' && canApprove && (
+            <button
+              type="button"
+              onClick={() => handleAction('reject')}
+              disabled={actionLoading}
+              style={btn('#c62828')}
+            >
+              Reject
             </button>
           )}
           {jc.status === 'APPROVED' && canSupervise && (

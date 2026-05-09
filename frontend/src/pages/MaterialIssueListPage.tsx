@@ -75,12 +75,38 @@ const MaterialIssueListPage: React.FC = () => {
     return total;
   }, [items]);
 
-  const handleAction = async (id: string, action: 'approve' | 'reject') => {
-    setActionId(id);
+  const handleAction = async (
+    item: MaterialIssue,
+    action: 'approve' | 'reject',
+  ) => {
+    setActionId(item.id);
     setError(null);
     try {
-      if (action === 'approve') await materialIssueService.approve(id);
-      else await materialIssueService.reject(id);
+      if (action === 'approve') {
+        const requested = Number(item.requested_quantity);
+        const input = window.prompt(
+          `Enter issued quantity (${item.unit}). Requested: ${requested}.`,
+          String(requested),
+        );
+        if (input === null) {
+          setActionId(null);
+          return;
+        }
+        const issued = Number(input);
+        if (!Number.isFinite(issued) || issued <= 0) {
+          setError('Issued quantity must be a positive number.');
+          setActionId(null);
+          return;
+        }
+        if (issued > requested) {
+          setError('Issued quantity cannot exceed requested quantity.');
+          setActionId(null);
+          return;
+        }
+        await materialIssueService.approve(item.id, issued);
+      } else {
+        await materialIssueService.reject(item.id);
+      }
       await load();
     } catch (err: any) {
       setError(err?.response?.data?.detail || `Failed to ${action} request.`);
@@ -190,7 +216,7 @@ const MaterialIssueListPage: React.FC = () => {
                       <button
                         type="button"
                         disabled={actionId === it.id}
-                        onClick={() => handleAction(it.id, 'approve')}
+                        onClick={() => handleAction(it, 'approve')}
                         style={btn('#2e7d32')}
                       >
                         Approve
@@ -198,7 +224,7 @@ const MaterialIssueListPage: React.FC = () => {
                       <button
                         type="button"
                         disabled={actionId === it.id}
-                        onClick={() => handleAction(it.id, 'reject')}
+                        onClick={() => handleAction(it, 'reject')}
                         style={btn('#c62828')}
                       >
                         Reject
